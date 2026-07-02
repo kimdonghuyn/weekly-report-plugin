@@ -47,4 +47,4 @@ Claude Code 세션에서 실제로 요청한 문구, 수동 기록)을 모아 �
 
 ## 라이선스
 
-MIT
+[MIT](./LICENSE)
