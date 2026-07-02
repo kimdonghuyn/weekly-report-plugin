@@ -10,13 +10,6 @@ description: Use when the user asks for a weekly report, work summary, or an "�
 
 ## 실행 절차
 
-0. 설정 파일 `~/.claude/weekly-report/config.json`을 확인한다. 파일이 없으면 스크립트가 최초
-   실행 시 자동 생성하는데, 이때 `scanRoots`는 빈 배열로 시작한다. `scanRoots`가 비어 있으면
-   (최초 실행이거나 아직 설정 안 한 경우) 먼저 사용자에게 git 프로젝트들이 모여 있는 폴더
-   경로를 물어보고(여러 개 가능), 그 경로들을 `scanRoots` 배열에 채워 파일을 직접 수정한
-   뒤 진행한다. `authorEmail`은 `git config --global user.email` 값으로 자동 채워지므로
-   보통 그대로 둬도 되지만, 커밋에 쓰는 이메일이 다르면 이 값도 같이 확인한다.
-
 1. 데이터 수집 스크립트를 실행한다:
 
    ```bash
@@ -32,12 +25,22 @@ description: Use when the user asks for a weekly report, work summary, or an "�
      "weekLabel": "2026-W27",
      "since": "...", "until": "...",
      "archivePath": "<config.json의 archivePath 값>",
+     "needsSetup": false,
      "projects": [
        { "repoPath": "...", "repoName": "...", "commits": [...], "sessionMessages": [...], "manualEntries": [...] }
      ],
      "unmatched": [...]
    }
    ```
+
+   **`needsSetup`이 `true`이면 아직 스캔할 프로젝트 폴더가 설정되지 않은 것이다** (설치 후
+   최초 실행이거나 `config.json`의 `scanRoots`가 비어 있는 상태). 이 경우 `projects`는 항상
+   비어 있고 `weekly-log`로 기록해둔 내용도 전부 `unmatched`로만 잡힌다 — "이번 주 활동
+   없음"이 아니라 "설정 안 됨"이므로, 보고서를 바로 쓰지 말고 먼저 사용자에게 git
+   프로젝트들이 모여 있는 폴더 경로를 물어봐서(여러 개 가능) `~/.claude/weekly-report/config.json`의
+   `scanRoots` 배열에 채운 뒤 1번부터 다시 실행한다. `authorEmail`은 `git config --global
+   user.email` 값으로 자동 채워지므로 보통 그대로 둬도 되지만, 커밋에 쓰는 이메일이 다르면
+   이 값도 같이 확인한다.
 
 3. `projects` 배열의 각 프로젝트에 대해 `commits`(커밋 메시지), `sessionMessages`(그 주 동안
    사용자가 Claude에게 실제로 요청한 문구), `manualEntries`(수동 기록)를 모두 참고해서 다음
@@ -49,7 +52,8 @@ description: Use when the user asks for a weekly report, work summary, or an "�
    활동이 전혀 없는 프로젝트는 이미 배열에서 빠져 있으므로 신경 쓸 필요 없다.
 
 4. `unmatched` 배열(어떤 저장소와도 매칭되지 않은 수동 로그)이 있으면 맨 마지막에 "기타" 섹션으로
-   추가한다.
+   추가한다. 프로젝트명 오타나 `scanRoots`에 없는 경로 때문에 매칭이 안 됐을 수 있으니, 항목이
+   있으면 왜 매칭되지 않았는지 짐작되는 이유를 함께 언급해준다.
 
 5. 완성된 보고서를 마크다운으로 채팅에 출력한다.
 

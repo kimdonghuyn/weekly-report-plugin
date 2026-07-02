@@ -1,6 +1,6 @@
 {
   "name": "weekly-report",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Aggregate git commits, Claude Code session activity, and manual work logs across projects into a per-project weekly report.",
   "author": {
     "name": "kimdonghuyn"

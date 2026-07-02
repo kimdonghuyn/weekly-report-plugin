@@ -52,6 +52,7 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
     since: week.start.toISOString(),
     until: week.end.toISOString(),
     archivePath: config.archivePath,
+    needsSetup: config.scanRoots.length === 0,
     projects,
     unmatched,
   };

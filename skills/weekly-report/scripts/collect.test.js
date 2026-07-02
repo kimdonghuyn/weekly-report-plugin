@@ -88,3 +88,55 @@ test('run() omits repos with zero activity and buckets unmatched manual entries'
   assert.equal(result.unmatched.length, 1);
   assert.equal(result.unmatched[0].project, '어떤 프로젝트도 아님');
 });
+
+test('run() flags needsSetup when scanRoots is empty, even if manual entries exist', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home3-'));
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [],
+      authorEmail: 'me@example.com',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+    })
+  );
+
+  const week = getWeekRange(new Date());
+  const logsDir = path.join(configDir, 'logs');
+  fs.mkdirSync(logsDir, { recursive: true });
+  const today = new Date().toISOString().slice(0, 10);
+  fs.writeFileSync(
+    path.join(logsDir, `${week.isoLabel}.md`),
+    `## ${today} (테스트)\n- [my-cool-app] 로그인 페이지 리팩터링\n`
+  );
+
+  const result = run({ argv: [], homeDir });
+
+  assert.equal(result.needsSetup, true);
+  assert.equal(result.projects.length, 0);
+  assert.equal(result.unmatched.length, 1);
+});
+
+test('run() reports needsSetup as false once scanRoots has at least one entry', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home4-'));
+  const scanRoot = path.join(homeDir, 'project');
+  fs.mkdirSync(scanRoot, { recursive: true });
+
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [scanRoot],
+      authorEmail: 'me@example.com',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+    })
+  );
+
+  const result = run({ argv: [], homeDir });
+
+  assert.equal(result.needsSetup, false);
+});
