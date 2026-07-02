@@ -1,13 +1,23 @@
 'use strict';
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { execSync } = require('child_process');
+
+function detectAuthorEmail() {
+  try {
+    return execSync('git config --global user.email', { encoding: 'utf8' }).trim();
+  } catch {
+    return '';
+  }
+}
 
 function defaultConfig() {
   return {
-    scanRoots: ['C:/project'],
-    authorEmail: 'kdh898312@gmail.com',
+    scanRoots: [],
+    authorEmail: detectAuthorEmail(),
     weekStartsOn: 'monday',
-    archivePath: 'C:/Users/philip/Documents/WeeklyReports',
+    archivePath: path.join(os.homedir(), 'Documents', 'WeeklyReports'),
   };
 }
 

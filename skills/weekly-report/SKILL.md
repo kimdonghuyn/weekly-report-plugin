@@ -10,6 +10,13 @@ description: Use when the user asks for a weekly report, work summary, or an "�
 
 ## 실행 절차
 
+0. 설정 파일 `~/.claude/weekly-report/config.json`을 확인한다. 파일이 없으면 스크립트가 최초
+   실행 시 자동 생성하는데, 이때 `scanRoots`는 빈 배열로 시작한다. `scanRoots`가 비어 있으면
+   (최초 실행이거나 아직 설정 안 한 경우) 먼저 사용자에게 git 프로젝트들이 모여 있는 폴더
+   경로를 물어보고(여러 개 가능), 그 경로들을 `scanRoots` 배열에 채워 파일을 직접 수정한
+   뒤 진행한다. `authorEmail`은 `git config --global user.email` 값으로 자동 채워지므로
+   보통 그대로 둬도 되지만, 커밋에 쓰는 이메일이 다르면 이 값도 같이 확인한다.
+
 1. 데이터 수집 스크립트를 실행한다:
 
    ```bash
@@ -24,7 +31,7 @@ description: Use when the user asks for a weekly report, work summary, or an "�
    {
      "weekLabel": "2026-W27",
      "since": "...", "until": "...",
-     "archivePath": "C:/Users/philip/Documents/WeeklyReports",
+     "archivePath": "<config.json의 archivePath 값>",
      "projects": [
        { "repoPath": "...", "repoName": "...", "commits": [...], "sessionMessages": [...], "manualEntries": [...] }
      ],
@@ -55,4 +62,6 @@ description: Use when the user asks for a weekly report, work summary, or an "�
 - `sessionMessages`는 사용자가 그 주에 실제로 타이핑한 요청 문구다. 그대로 인용하지 말고 자연스러운
   보고서 문장으로 바꿔 쓴다.
 - 설정 파일은 `~/.claude/weekly-report/config.json`이며 최초 실행 시 자동 생성된다. 스캔 루트를
-  추가/변경하려면 이 파일을 직접 수정한다.
+  추가/변경하려면 이 파일을 직접 수정한다. `scanRoots`, `authorEmail`, `archivePath` 모두
+  설치한 사람의 환경에 맞게 개별적으로 설정되는 값이며, 플러그인 자체에는 특정 사용자의
+  경로나 이메일이 들어있지 않다.
