@@ -1,0 +1,15 @@
+{
+  "name": "weekly-report-plugin",
+  "owner": {
+    "name": "kimdonghuyn"
+  },
+  "description": "Weekly work report generator for Claude Code — aggregates git commits, session activity, and manual logs into per-project reports.",
+  "plugins": [
+    {
+      "name": "weekly-report",
+      "source": "./",
+      "description": "Aggregate git commits, Claude Code session activity, and manual work logs across projects into a per-project weekly report.",
+      "version": "1.0.0"
+    }
+  ]
+}
