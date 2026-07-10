@@ -17,6 +17,17 @@ Claude Code/Codex CLI 세션에서 실제로 요청한 문구, 수동 기록)을
 /plugin install weekly-report@weekly-report-plugin
 ```
 
+## 업데이트
+
+새 버전이 나왔을 때 받는 방법:
+
+```
+/plugin marketplace update weekly-report-plugin
+```
+
+`/plugin` 명령으로 Marketplaces 탭에 들어가면 "Enable auto-update" 토글로 자동 업데이트를
+켤 수도 있다 (서드파티 마켓플레이스는 기본값이 꺼짐).
+
 ## 사용법
 
 ```
