@@ -23,7 +23,7 @@ function appendLogEntry({ logsDir, date, project, content }) {
   const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const heading = `## ${dateStr} (${WEEKDAY_KO[date.getDay()]})`;
 
-  let text = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+  let text = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n') : '';
   if (!text.includes(heading)) {
     text += (text.length && !text.endsWith('\n') ? '\n' : '') + `${heading}\n`;
   }

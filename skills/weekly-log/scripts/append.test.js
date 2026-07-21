@@ -31,3 +31,18 @@ test('appending twice on the same day writes only one heading', () => {
 test('isoWeekLabel produces the file name used for lookup', () => {
   assert.equal(isoWeekLabel(new Date(2026, 6, 2)), '2026-W27');
 });
+
+test('normalizes a pre-existing CRLF file to LF and keeps a single heading', () => {
+  const logsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-log-crlf-'));
+  const date = new Date(2026, 6, 2); // Thursday -> 2026-W27, heading "## 2026-07-02 (목)"
+  const filePath = path.join(logsDir, '2026-W27.md');
+  fs.writeFileSync(filePath, '## 2026-07-02 (목)\r\n- [demo-repo] 오전 작업\r\n', 'utf8');
+
+  appendLogEntry({ logsDir, date, project: 'demo-repo', content: '오후 작업' });
+
+  const text = fs.readFileSync(filePath, 'utf8');
+  assert.ok(!text.includes('\r'), 'expected no CR characters in the output');
+  assert.equal((text.match(/## 2026-07-02/g) || []).length, 1);
+  assert.match(text, /오전 작업/);
+  assert.match(text, /오후 작업/);
+});
