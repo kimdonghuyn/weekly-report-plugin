@@ -32,3 +32,22 @@ test('parses date headings and bracketed project entries', () => {
 test('returns [] when the file does not exist', () => {
   assert.deepEqual(parseWeeklyLog('C:/nope/does-not-exist.md'), []);
 });
+
+test('parses entries when the file uses CRLF line endings', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-manuallog-crlf-'));
+  const file = path.join(dir, '2026-W27.md');
+  fs.writeFileSync(
+    file,
+    [
+      '## 2026-07-01 (수)',
+      '- [demo-repo] 첫 번째 작업',
+      '- [고려대 FE] 두 번째 작업',
+    ].join('\r\n'),
+    'utf8'
+  );
+
+  const entries = parseWeeklyLog(file);
+  assert.equal(entries.length, 2);
+  assert.deepEqual(entries[0], { date: '2026-07-01', project: 'demo-repo', content: '첫 번째 작업' });
+  assert.deepEqual(entries[1], { date: '2026-07-01', project: '고려대 FE', content: '두 번째 작업' });
+});

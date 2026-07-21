@@ -6,7 +6,7 @@ const ENTRY_RE = /^-\s*\[([^\]]+)\]\s*(.+)$/;
 
 function parseWeeklyLog(filePath) {
   if (!fs.existsSync(filePath)) return [];
-  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
   const entries = [];
   let currentDate = null;
   for (const line of lines) {
