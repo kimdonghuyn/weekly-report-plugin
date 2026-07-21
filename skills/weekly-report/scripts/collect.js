@@ -6,6 +6,7 @@ const { loadOrCreateConfig } = require('./lib/config');
 const { findGitRepos, getCommits } = require('./lib/gitScan');
 const { getSessionUserMessages } = require('./lib/sessionScan');
 const { parseWeeklyLog } = require('./lib/manualLog');
+const { normalizeScanRoot } = require('./lib/pathSanitize');
 
 function parseArgs(argv) {
   const startArg = argv.find((a) => a.startsWith('--start='));
@@ -31,7 +32,8 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
   const projects = [];
   const claimedEntries = new Set();
 
-  for (const root of config.scanRoots) {
+  for (const rawRoot of config.scanRoots) {
+    const root = normalizeScanRoot(rawRoot);
     for (const repoPath of findGitRepos(root)) {
       const repoName = path.basename(repoPath);
       const commits = getCommits(repoPath, { since: week.start, until: week.end, authorEmail: config.authorEmail });
