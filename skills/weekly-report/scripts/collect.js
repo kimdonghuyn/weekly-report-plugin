@@ -5,6 +5,7 @@ const { getWeekRange } = require('./lib/week');
 const { loadOrCreateConfig } = require('./lib/config');
 const { findGitRepos, getCommits } = require('./lib/gitScan');
 const { getSessionUserMessages } = require('./lib/sessionScan');
+const { getCodexUserMessages } = require('./lib/codexScan');
 const { parseWeeklyLog } = require('./lib/manualLog');
 const { normalizeScanRoot } = require('./lib/pathSanitize');
 
@@ -26,6 +27,7 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
   const configPath = path.join(homeDir, '.claude', 'weekly-report', 'config.json');
   const config = loadOrCreateConfig(configPath);
   const claudeProjectsRoot = path.join(homeDir, '.claude', 'projects');
+  const codexSessionsRoot = path.join(homeDir, '.codex', 'sessions');
   const logsDir = path.join(homeDir, '.claude', 'weekly-report', 'logs');
   const manualEntries = parseWeeklyLog(path.join(logsDir, `${week.isoLabel}.md`));
 
@@ -37,7 +39,11 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
     for (const repoPath of findGitRepos(root)) {
       const repoName = path.basename(repoPath);
       const commits = getCommits(repoPath, { since: week.start, until: week.end, authorEmail: config.authorEmail });
-      const sessionMessages = getSessionUserMessages(repoPath, { since: week.start, until: week.end, claudeProjectsRoot });
+      const claudeMessages = getSessionUserMessages(repoPath, { since: week.start, until: week.end, claudeProjectsRoot });
+      const codexMessages = getCodexUserMessages(repoPath, { since: week.start, until: week.end, codexSessionsRoot, homeDir });
+      const sessionMessages = [...claudeMessages, ...codexMessages].sort((a, b) =>
+        a.timestamp.localeCompare(b.timestamp)
+      );
       const ownEntries = manualEntries.filter((e) => matches(e.project, repoName));
 
       if (commits.length === 0 && sessionMessages.length === 0 && ownEntries.length === 0) continue;

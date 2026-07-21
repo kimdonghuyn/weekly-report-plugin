@@ -28,7 +28,7 @@ function getSessionUserMessages(projectRoot, { since, until, claudeProjectsRoot 
       if (!record.timestamp) continue;
       const ts = new Date(record.timestamp);
       if (ts >= since && ts < until) {
-        results.push({ timestamp: record.timestamp, text: record.message.content });
+        results.push({ timestamp: record.timestamp, text: record.message.content, source: 'claude' });
       }
     }
   }
