@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { appendLogEntry, isoWeekLabel } = require('./append');
+const { isoWeekLabel: weekIsoWeekLabel } = require('../../weekly-report/scripts/lib/week');
 
 test('creates the file with a date heading and entry on first append', () => {
   const logsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-log-'));
@@ -30,6 +31,36 @@ test('appending twice on the same day writes only one heading', () => {
 
 test('isoWeekLabel produces the file name used for lookup', () => {
   assert.equal(isoWeekLabel(new Date(2026, 6, 2)), '2026-W27');
+});
+
+test('append isoWeekLabel pins expected labels across boundaries', () => {
+  const cases = [
+    [new Date(2026, 0, 1), '2026-W01'],
+    [new Date(2026, 6, 2), '2026-W27'],
+    [new Date(2026, 6, 5), '2026-W27'],
+    [new Date(2026, 6, 6), '2026-W28'],
+    [new Date(2026, 11, 31), '2026-W53'],
+    [new Date(2027, 0, 1), '2026-W53'],
+    [new Date(2027, 0, 4), '2027-W01'],
+  ];
+  for (const [date, expected] of cases) {
+    assert.equal(isoWeekLabel(date), expected, `for ${date.toDateString()}`);
+  }
+});
+
+test('append and week isoWeekLabel agree on every boundary date', () => {
+  const dates = [
+    new Date(2026, 0, 1),
+    new Date(2026, 6, 2),
+    new Date(2026, 6, 5),
+    new Date(2026, 6, 6),
+    new Date(2026, 11, 31),
+    new Date(2027, 0, 1),
+    new Date(2027, 0, 4),
+  ];
+  for (const date of dates) {
+    assert.equal(isoWeekLabel(date), weekIsoWeekLabel(date), `divergence at ${date.toDateString()}`);
+  }
 });
 
 test('normalizes a pre-existing CRLF file to LF and keeps a single heading', () => {
