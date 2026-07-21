@@ -13,7 +13,7 @@ description: Use when the user asks for a weekly report, work summary, or an "�
 1. 데이터 수집 스크립트를 실행한다:
 
    ```bash
-   node "${CLAUDE_SKILL_DIR}/scripts/collect.js"
+   node "${CLAUDE_PLUGIN_ROOT}/skills/weekly-report/scripts/collect.js"
    ```
 
    특정 주를 지정하려면 그 주에 포함된 아무 날짜나 `--start=YYYY-MM-DD` 로 넘긴다.
