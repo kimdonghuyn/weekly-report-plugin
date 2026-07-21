@@ -56,3 +56,28 @@ test('skips unparseable lines without throwing', () => {
   });
   assert.deepEqual(messages, []);
 });
+
+test('parses session records when the .jsonl uses CRLF line endings', () => {
+  const claudeProjectsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-sessions-crlf-'));
+  const sessionDir = path.join(claudeProjectsRoot, 'C--project-fixture-repo');
+  fs.mkdirSync(sessionDir, { recursive: true });
+  const records = [
+    { type: 'user', isSidechain: false, timestamp: '2026-06-30T01:00:00.000Z', message: { role: 'user', content: '크롤 CRLF 요청' } },
+    { type: 'user', isSidechain: false, timestamp: '2026-06-30T02:00:00.000Z', message: { role: 'user', content: '두 번째 요청' } },
+  ];
+  fs.writeFileSync(
+    path.join(sessionDir, 'session-crlf.jsonl'),
+    records.map((r) => JSON.stringify(r)).join('\r\n') + '\r\n',
+    'utf8'
+  );
+
+  const messages = getSessionUserMessages('C:\\project\\fixture-repo', {
+    since: new Date('2026-06-29T00:00:00.000Z'),
+    until: new Date('2026-07-06T00:00:00.000Z'),
+    claudeProjectsRoot,
+  });
+
+  assert.equal(messages.length, 2);
+  assert.equal(messages[0].text, '크롤 CRLF 요청');
+  assert.equal(messages[1].text, '두 번째 요청');
+});
