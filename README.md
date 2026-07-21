@@ -70,6 +70,32 @@ npm test
   보고서 마지막에 "기타" 섹션으로 추가된다.
 - 완성된 보고서는 채팅에 출력됨과 동시에 `<archivePath>/<weekLabel>.md` 파일로 저장된다.
 
+## 변경 이력
+
+전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
+
+### 1.1.1 — 2026-07-21
+- **크로스 플랫폼 지원**: Windows/macOS의 Claude Code에서 동일하게 동작하도록 견고화.
+- SKILL.md 스크립트 참조를 표준 변수 `${CLAUDE_PLUGIN_ROOT}` 로 통일(비표준 `${CLAUDE_SKILL_DIR}` 제거).
+- 로그·세션 파싱을 CRLF/LF 양쪽에 안전하게 처리, 이어쓰기 시 CRLF→LF 정규화.
+- `scanRoots` 역슬래시 경로(`C:\project`)를 정규화하여 macOS에서도 안전 처리.
+- 주 라벨(`isoWeekLabel`)이 두 스킬에서 항상 일치하도록 경계값 회귀 테스트 추가.
+- `package.json`(Node 18+, `npm test`), `.gitattributes`(LF 강제), Windows/macOS/Ubuntu CI 추가.
+
+### 1.1.0 — 2026-07-10
+- Codex CLI 세션 로그(`~/.codex/sessions/**/rollout-*.jsonl`)를 스캔해 Claude Code 세션과 함께
+  `sessionMessages`에 합쳐 넣도록 확장. 각 항목에 `source`(`"claude"`/`"codex"`) 필드 추가.
+- 다른 도구에서 임포트된 Codex 세션은 집계에서 제외.
+
+### 1.0.2
+- `scanRoots`가 비어 있을 때 `needsSetup` 신호를 결과에 노출.
+
+### 1.0.1
+- `config.js`에서 특정 사용자용 하드코딩된 기본값 제거.
+
+### 1.0.0
+- `weekly-report`, `weekly-log` 스킬을 Claude Code 플러그인으로 패키징.
+
 ## 라이선스
 
 [MIT](./LICENSE)

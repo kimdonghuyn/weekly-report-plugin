@@ -1,6 +1,6 @@
 {
   "name": "weekly-report",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Aggregate git commits, Claude Code and Codex CLI session activity, and manual work logs across projects into a per-project weekly report.",
   "author": {
     "name": "kimdonghuyn"
