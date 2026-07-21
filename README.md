@@ -10,6 +10,18 @@ Claude Code 세션에서 실제로 요청한 문구, 수동 기록)을 모아 �
 - **weekly-log** — 대화 중 "오늘 [프로젝트] ~했어", "이거 기록해줘" 같은 말을 하면 자동으로
   해당 주 로그 파일에 한 줄 기록을 남긴다. `weekly-report`가 이 로그를 함께 집계한다.
 
+## 요구 사항
+
+- Windows 또는 macOS의 Claude Code
+- Node.js 18 이상 (스크립트 실행 및 `node --test` 러너)
+- git (커밋 수집)
+
+플러그인 스크립트는 Windows와 macOS에서 동일하게 동작한다. 개발 시 테스트는 저장소 루트에서 실행한다:
+
+```
+npm test
+```
+
 ## 설치
 
 ```
@@ -36,7 +48,7 @@ Claude Code 세션에서 실제로 요청한 문구, 수동 기록)을 모아 �
   경로나 이메일이 하드코딩되어 있지 않다.
   - `scanRoots`: 스캔할 git 프로젝트들의 상위 폴더 목록. 최초 실행 시 빈 배열로 생성되므로,
     처음 `/weekly-report`를 실행하면 Claude가 프로젝트 폴더 경로를 물어보고 이 값을 채운다.
-    예) `["C:/project", "D:/work"]`
+    예) Windows `["C:/project", "D:/work"]`, macOS `["/Users/you/projects", "/Users/you/work"]`
   - `authorEmail`: 커밋 작성자 필터. `git config --global user.email` 값으로 자동 채워진다.
   - `archivePath`: 보고서를 저장할 폴더. 기본값은 `~/Documents/WeeklyReports`.
 - git 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만 수집한다.
