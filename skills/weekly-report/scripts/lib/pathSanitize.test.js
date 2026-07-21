@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { sanitizeProjectPath } = require('./pathSanitize');
+const { sanitizeProjectPath, normalizeScanRoot } = require('./pathSanitize');
 
 test('sanitizes a simple project path', () => {
   assert.equal(
@@ -19,4 +19,14 @@ test('sanitizes a deeper path with an already-hyphenated folder name', () => {
     sanitizeProjectPath('C:\\Users\\philip\\IdeaProjects\\next-study'),
     'C--Users-philip-IdeaProjects-next-study'
   );
+});
+
+test('normalizeScanRoot converts backslashes to forward slashes', () => {
+  assert.equal(normalizeScanRoot('C:\\project'), 'C:/project');
+  assert.equal(normalizeScanRoot('C:\\Users\\philip\\work'), 'C:/Users/philip/work');
+});
+
+test('normalizeScanRoot leaves forward-slash paths unchanged', () => {
+  assert.equal(normalizeScanRoot('/Users/philip/projects'), '/Users/philip/projects');
+  assert.equal(normalizeScanRoot('C:/project'), 'C:/project');
 });

@@ -14,7 +14,7 @@ description: Use when the user reports something they just did or wants it logge
 2. 아래 명령을 실행한다:
 
    ```bash
-   node "${CLAUDE_SKILL_DIR}/scripts/append.js" "<프로젝트명>" "<작업 내용 한 줄>"
+   node "${CLAUDE_PLUGIN_ROOT}/skills/weekly-log/scripts/append.js" "<프로젝트명>" "<작업 내용 한 줄>"
    ```
 
 3. 스크립트가 출력한 파일 경로를 확인만 하고, 사용자에게는 짧게 "기록했습니다" 정도로만

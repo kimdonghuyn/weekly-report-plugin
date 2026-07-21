@@ -14,7 +14,7 @@ function getSessionUserMessages(projectRoot, { since, until, claudeProjectsRoot 
 
   const results = [];
   for (const file of files) {
-    const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
+    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean);
     for (const line of lines) {
       let record;
       try {

@@ -37,3 +37,18 @@ test('Monday and Sunday of the same week share the same isoLabel', () => {
   assert.equal(mon, sun);
   assert.equal(mon, '2026-W28');
 });
+
+test('isoWeekLabel pins expected labels across year and week boundaries', () => {
+  const cases = [
+    [new Date(2026, 0, 1), '2026-W01'],
+    [new Date(2026, 6, 2), '2026-W27'],
+    [new Date(2026, 6, 5), '2026-W27'],
+    [new Date(2026, 6, 6), '2026-W28'],
+    [new Date(2026, 11, 31), '2026-W53'],
+    [new Date(2027, 0, 1), '2026-W53'],
+    [new Date(2027, 0, 4), '2027-W01'],
+  ];
+  for (const [date, expected] of cases) {
+    assert.equal(isoWeekLabel(date), expected, `for ${date.toDateString()}`);
+  }
+});
