@@ -1,7 +1,7 @@
 # weekly-report-plugin
 
 Claude Code용 주간 업무 보고서 플러그인. 여러 git 프로젝트에 걸친 한 주간의 작업(git 커밋,
-Claude Code/Codex CLI 세션에서 실제로 요청한 문구, 수동 기록)을 모아 프로젝트별로 정리된 보고서를 생성한다.
+Claude Code/Codex CLI/Gemini CLI 세션에서 실제로 요청한 문구, 수동 기록)을 모아 프로젝트별로 정리된 보고서를 생성한다.
 
 ## 포함된 스킬
 
@@ -63,9 +63,11 @@ npm test
   - `authorEmail`: 커밋 작성자 필터. `git config --global user.email` 값으로 자동 채워진다.
   - `archivePath`: 보고서를 저장할 폴더. 기본값은 `~/Documents/WeeklyReports`.
 - git 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만 수집한다.
-- Claude Code(`~/.claude/projects`)와 Codex CLI(`~/.codex/sessions`) 세션 기록에서 그 주에
-  사용자가 실제로 입력한 요청 문구를 함께 참고한다. Codex 쪽은 세션의 `cwd`로 프로젝트를
-  매칭하며, 다른 도구에서 가져온("임포트된") 세션은 집계에서 제외한다.
+- Claude Code(`~/.claude/projects`), Codex CLI(`~/.codex/sessions`), Gemini CLI(`~/.gemini/tmp`)
+  세션 기록에서 그 주에 사용자가 실제로 입력한 요청 문구를 함께 참고한다. Codex 쪽은 세션의
+  `cwd`로 프로젝트를 매칭하며, 다른 도구에서 가져온("임포트된") 세션은 집계에서 제외한다.
+  Gemini 쪽은 프로젝트별 디렉터리의 `.project_root`·세션 메타의 `directories`·`projects.json`으로
+  프로젝트를 매칭하고, 연속 로그인 `chats/`를 우선 쓰되 없으면 `logs.json`으로 폴백한다.
 - `weekly-log` 스킬로 남긴 수동 기록도 함께 집계되며, 어떤 저장소와도 매칭되지 않는 기록은
   보고서 마지막에 "기타" 섹션으로 추가된다.
 - 완성된 보고서는 채팅에 출력됨과 동시에 `<archivePath>/<weekLabel>.md` 파일로 저장된다.
@@ -73,6 +75,13 @@ npm test
 ## 변경 이력
 
 전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
+
+### 1.2.0 — 2026-07-24
+- **Gemini CLI 세션 지원**: `~/.gemini/tmp/<id>/`의 대화 기록을 스캔해 Claude Code·Codex
+  세션과 함께 `sessionMessages`에 합치고 각 항목에 `source: "gemini"`를 부여.
+- 프로젝트 매칭은 `.project_root` → 세션 메타 `directories` → `projects.json` 순으로 판별하여
+  SHA-256 해시/슬러그 디렉터리 명명 방식을 모두 지원. `chats/*.jsonl`(레거시 `*.json`) 우선,
+  없으면 `logs.json` 폴백. `kind: "subagent"` 세션 제외.
 
 ### 1.1.1 — 2026-07-21
 - **크로스 플랫폼 지원**: Windows/macOS의 Claude Code에서 동일하게 동작하도록 견고화.

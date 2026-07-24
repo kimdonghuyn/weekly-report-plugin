@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 — 2026-07-24
+
+- Gemini CLI 세션 기록(`~/.gemini/tmp/<id>/`)을 스캔해서, Claude Code·Codex CLI 세션
+  문구와 함께 `sessionMessages`에 합쳐 넣도록 확장. 각 항목에 `source: "gemini"`가 추가됨.
+- 프로젝트별 디렉터리(`<id>`)의 cwd를 `.project_root` 마커 → 세션 파일 메타의
+  `directories` → `~/.gemini/projects.json` 순으로 판별하여, SHA-256 해시(구버전)와
+  슬러그(신버전) 디렉터리 명명 방식을 모두 지원.
+- 대화 기록은 연속 로그인 `chats/*.jsonl`(레거시 통짜 `chats/*.json` 포함)을 우선
+  사용하고, `chats/`가 없는 설치에서는 `logs.json`으로 폴백. 둘 다 있을 때는 중복
+  집계를 피하기 위해 `chats/`만 채택. `kind: "subagent"` 세션은 제외.
+
 ## 1.1.1 — 2026-07-21
 
 - **크로스 플랫폼 지원**: Windows와 macOS의 Claude Code에서 동일하게 동작하도록 견고화.

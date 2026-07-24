@@ -1,6 +1,6 @@
 {
   "name": "weekly-report-plugin",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Weekly work report generator for Claude Code — aggregates git commits, session activity, and manual logs into per-project reports.",
   "private": true,
   "license": "MIT",

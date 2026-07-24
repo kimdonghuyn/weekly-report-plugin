@@ -6,6 +6,7 @@ const { loadOrCreateConfig } = require('./lib/config');
 const { findGitRepos, getCommits } = require('./lib/gitScan');
 const { getSessionUserMessages } = require('./lib/sessionScan');
 const { getCodexUserMessages } = require('./lib/codexScan');
+const { getGeminiUserMessages } = require('./lib/geminiScan');
 const { parseWeeklyLog } = require('./lib/manualLog');
 const { normalizeScanRoot } = require('./lib/pathSanitize');
 
@@ -28,6 +29,7 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
   const config = loadOrCreateConfig(configPath);
   const claudeProjectsRoot = path.join(homeDir, '.claude', 'projects');
   const codexSessionsRoot = path.join(homeDir, '.codex', 'sessions');
+  const geminiTmpRoot = path.join(homeDir, '.gemini', 'tmp');
   const logsDir = path.join(homeDir, '.claude', 'weekly-report', 'logs');
   const manualEntries = parseWeeklyLog(path.join(logsDir, `${week.isoLabel}.md`));
 
@@ -41,7 +43,8 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
       const commits = getCommits(repoPath, { since: week.start, until: week.end, authorEmail: config.authorEmail });
       const claudeMessages = getSessionUserMessages(repoPath, { since: week.start, until: week.end, claudeProjectsRoot });
       const codexMessages = getCodexUserMessages(repoPath, { since: week.start, until: week.end, codexSessionsRoot, homeDir });
-      const sessionMessages = [...claudeMessages, ...codexMessages].sort((a, b) =>
+      const geminiMessages = getGeminiUserMessages(repoPath, { since: week.start, until: week.end, geminiTmpRoot, homeDir });
+      const sessionMessages = [...claudeMessages, ...codexMessages, ...geminiMessages].sort((a, b) =>
         a.timestamp.localeCompare(b.timestamp)
       );
       const ownEntries = manualEntries.filter((e) => matches(e.project, repoName));

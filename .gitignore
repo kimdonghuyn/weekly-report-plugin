@@ -1,0 +1,5 @@
+# Internal design/spec docs — kept local, not published to the repo
+docs/
+
+# Node
+node_modules/
