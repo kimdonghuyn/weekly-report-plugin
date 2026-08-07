@@ -9,6 +9,7 @@ const { getCodexUserMessages } = require('./lib/codexScan');
 const { getGeminiUserMessages } = require('./lib/geminiScan');
 const { parseWeeklyLog } = require('./lib/manualLog');
 const { normalizeScanRoot } = require('./lib/pathSanitize');
+const { getFigmaActivity } = require('./lib/figmaScan');
 
 function parseArgs(argv) {
   const startArg = argv.find((a) => a.startsWith('--start='));
@@ -21,7 +22,7 @@ function matches(project, repoName) {
   return p.includes(r) || r.includes(p);
 }
 
-function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
+async function run({ argv = process.argv.slice(2), homeDir = os.homedir(), figmaFetchJson } = {}) {
   const { start } = parseArgs(argv);
   const week = getWeekRange(start);
 
@@ -58,19 +59,39 @@ function run({ argv = process.argv.slice(2), homeDir = os.homedir() } = {}) {
 
   const unmatched = manualEntries.filter((e) => !claimedEntries.has(e));
 
+  // Figma는 옵션 소스: 토큰(FIGMA_TOKEN 환경변수 우선)과 teamIds가 설정된 경우에만 조회한다.
+  const figmaConfig = config.figma || {};
+  const figmaToken = process.env.FIGMA_TOKEN || figmaConfig.token || '';
+  const figmaTeamIds = figmaConfig.teamIds || [];
+  const figmaConfigured = Boolean(figmaToken) && figmaTeamIds.length > 0;
+  const figma = figmaConfigured
+    ? await getFigmaActivity({
+        token: figmaToken,
+        teamIds: figmaTeamIds,
+        userHandles: figmaConfig.userHandles || [],
+        since: week.start,
+        until: week.end,
+        ...(figmaFetchJson ? { fetchJson: figmaFetchJson } : {}),
+      })
+    : [];
+
   return {
     weekLabel: week.isoLabel,
     since: week.start.toISOString(),
     until: week.end.toISOString(),
     archivePath: config.archivePath,
-    needsSetup: config.scanRoots.length === 0,
+    needsSetup: config.scanRoots.length === 0 && !figmaConfigured,
     projects,
     unmatched,
+    figmaConfigured,
+    figma,
   };
 }
 
 if (require.main === module) {
-  process.stdout.write(JSON.stringify(run(), null, 2));
+  run().then((result) => {
+    process.stdout.write(JSON.stringify(result, null, 2));
+  });
 }
 
 module.exports = { run, parseArgs };

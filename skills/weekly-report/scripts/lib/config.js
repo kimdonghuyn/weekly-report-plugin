@@ -18,6 +18,7 @@ function defaultConfig() {
     authorEmail: detectAuthorEmail(),
     weekStartsOn: 'monday',
     archivePath: path.join(os.homedir(), 'Documents', 'WeeklyReports'),
+    figma: { token: '', teamIds: [], userHandles: [] },
   };
 }
 

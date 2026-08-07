@@ -3,13 +3,13 @@
   "owner": {
     "name": "kimdonghuyn"
   },
-  "description": "Weekly work report generator for Claude Code — aggregates git commits, session activity, and manual logs into per-project reports.",
+  "description": "Weekly work report generator for Claude Code and Codex CLI — aggregates git commits, session activity, manual logs, and Figma design activity into per-project reports.",
   "plugins": [
     {
       "name": "weekly-report",
       "source": "./",
-      "description": "Aggregate git commits, Claude Code, Codex CLI and Gemini CLI session activity, and manual work logs across projects into a per-project weekly report.",
-      "version": "1.3.0"
+      "description": "Aggregate git commits, Claude Code, Codex CLI and Gemini CLI session activity, manual work logs, and optional Figma design activity across projects into a per-project weekly report.",
+      "version": "1.4.0"
     }
   ]
 }

@@ -18,7 +18,7 @@ function makeRepoWithCommit(dir) {
   execFileSync('git', ['commit', '-q', '-m', 'do the thing'], { cwd: dir });
 }
 
-test('run() merges git commits and manual log entries for the target week', () => {
+test('run() merges git commits and manual log entries for the target week', async () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home-'));
   const scanRoot = path.join(homeDir, 'project');
   makeRepoWithCommit(path.join(scanRoot, 'demo-repo'));
@@ -44,7 +44,7 @@ test('run() merges git commits and manual log entries for the target week', () =
     `## ${today} (테스트)\n- [demo-repo] 수동으로 기록한 작업\n`
   );
 
-  const result = run({ argv: [], homeDir });
+  const result = await run({ argv: [], homeDir });
 
   assert.equal(result.weekLabel, week.isoLabel);
   assert.equal(result.projects.length, 1);
@@ -55,7 +55,7 @@ test('run() merges git commits and manual log entries for the target week', () =
   assert.equal(result.unmatched.length, 0);
 });
 
-test('run() omits repos with zero activity and buckets unmatched manual entries', () => {
+test('run() omits repos with zero activity and buckets unmatched manual entries', async () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home2-'));
   const scanRoot = path.join(homeDir, 'project');
   fs.mkdirSync(scanRoot, { recursive: true });
@@ -82,14 +82,14 @@ test('run() omits repos with zero activity and buckets unmatched manual entries'
     `## ${today} (테스트)\n- [어떤 프로젝트도 아님] 잡다한 메모\n`
   );
 
-  const result = run({ argv: [], homeDir });
+  const result = await run({ argv: [], homeDir });
 
   assert.equal(result.projects.length, 0);
   assert.equal(result.unmatched.length, 1);
   assert.equal(result.unmatched[0].project, '어떤 프로젝트도 아님');
 });
 
-test('run() flags needsSetup when scanRoots is empty, even if manual entries exist', () => {
+test('run() flags needsSetup when scanRoots is empty, even if manual entries exist', async () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home3-'));
   const configDir = path.join(homeDir, '.claude', 'weekly-report');
   fs.mkdirSync(configDir, { recursive: true });
@@ -112,14 +112,112 @@ test('run() flags needsSetup when scanRoots is empty, even if manual entries exi
     `## ${today} (테스트)\n- [my-cool-app] 로그인 페이지 리팩터링\n`
   );
 
-  const result = run({ argv: [], homeDir });
+  const result = await run({ argv: [], homeDir });
 
   assert.equal(result.needsSetup, true);
   assert.equal(result.projects.length, 0);
   assert.equal(result.unmatched.length, 1);
 });
 
-test('run() reports needsSetup as false once scanRoots has at least one entry', () => {
+test('run() includes figma activity when the config has a token and team ids', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home5-'));
+  const scanRoot = path.join(homeDir, 'project');
+  fs.mkdirSync(scanRoot, { recursive: true });
+
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [scanRoot],
+      authorEmail: 'me@example.com',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+      figma: { token: 'tok', teamIds: ['T1'], userHandles: [] },
+    })
+  );
+
+  const week = getWeekRange(new Date());
+  const inWeek = new Date(week.start.getTime() + 60_000).toISOString();
+  const figmaFetchJson = async (url) => {
+    if (url.endsWith('/v1/teams/T1/projects')) {
+      return { name: 'Design Team', projects: [{ id: 'P1', name: 'App Design' }] };
+    }
+    if (url.endsWith('/v1/projects/P1/files')) {
+      return { name: 'App Design', files: [{ key: 'F1', name: 'Login Flow', last_modified: inWeek }] };
+    }
+    if (url.includes('/v1/files/F1/versions')) {
+      return {
+        versions: [
+          { id: 'v1', created_at: inWeek, label: '로그인 개편', description: '', user: { id: 'u1', handle: 'designer-kim' } },
+        ],
+        pagination: {},
+      };
+    }
+    throw new Error(`unexpected url ${url}`);
+  };
+
+  const result = await run({ argv: [], homeDir, figmaFetchJson });
+
+  assert.equal(result.figmaConfigured, true);
+  assert.equal(result.figma.length, 1);
+  assert.equal(result.figma[0].fileName, 'Login Flow');
+  assert.equal(result.figma[0].versions[0].user.handle, 'designer-kim');
+});
+
+test('run() reports figmaConfigured false and calls no fetcher when figma is not set up', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home6-'));
+  const scanRoot = path.join(homeDir, 'project');
+  fs.mkdirSync(scanRoot, { recursive: true });
+
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [scanRoot],
+      authorEmail: 'me@example.com',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+    })
+  );
+
+  let called = false;
+  const figmaFetchJson = async () => {
+    called = true;
+    return {};
+  };
+
+  const result = await run({ argv: [], homeDir, figmaFetchJson });
+
+  assert.equal(result.figmaConfigured, false);
+  assert.deepEqual(result.figma, []);
+  assert.equal(called, false);
+});
+
+test('run() does not flag needsSetup when scanRoots is empty but figma is configured', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home7-'));
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [],
+      authorEmail: '',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+      figma: { token: 'tok', teamIds: ['T1'], userHandles: [] },
+    })
+  );
+
+  const figmaFetchJson = async () => ({ name: 'Team', projects: [] });
+  const result = await run({ argv: [], homeDir, figmaFetchJson });
+
+  assert.equal(result.needsSetup, false);
+  assert.equal(result.figmaConfigured, true);
+});
+
+test('run() reports needsSetup as false once scanRoots has at least one entry', async () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home4-'));
   const scanRoot = path.join(homeDir, 'project');
   fs.mkdirSync(scanRoot, { recursive: true });
@@ -136,7 +234,7 @@ test('run() reports needsSetup as false once scanRoots has at least one entry', 
     })
   );
 
-  const result = run({ argv: [], homeDir });
+  const result = await run({ argv: [], homeDir });
 
   assert.equal(result.needsSetup, false);
 });
