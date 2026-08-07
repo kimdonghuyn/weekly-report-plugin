@@ -33,14 +33,12 @@ function installPlugin({ repoRoot, pluginsDir, marketplacePath }) {
   const dest = path.join(pluginsDir, name);
 
   fs.rmSync(dest, { recursive: true, force: true });
-  fs.mkdirSync(pluginsDir, { recursive: true });
-  fs.cpSync(repoRoot, dest, {
-    recursive: true,
-    filter: (src) => {
-      const rel = path.relative(repoRoot, src);
-      return rel !== '.git' && !rel.startsWith('.git' + path.sep) && rel !== 'node_modules';
-    },
-  });
+  fs.mkdirSync(dest, { recursive: true });
+  // fs.cpSync의 filter는 Node 버전에 따라 동작이 달라 최상위 항목을 직접 순회한다.
+  for (const entry of fs.readdirSync(repoRoot, { withFileTypes: true })) {
+    if (entry.name === '.git' || entry.name === 'node_modules') continue;
+    fs.cpSync(path.join(repoRoot, entry.name), path.join(dest, entry.name), { recursive: true });
+  }
 
   let market;
   if (fs.existsSync(marketplacePath)) {
