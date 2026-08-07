@@ -174,6 +174,20 @@ macOS `~/.claude/weekly-report/config.json`
 }
 ```
 
+- **Drafts(내 초안) 파일 주의**: 팀 프로젝트에 있는 파일만 자동으로 스캔된다. Drafts에서
+  작업하는 파일은 Figma API의 팀 목록에 잡히지 않으므로, 파일 URL
+  (`figma.com/design/<파일키>/...`)의 `<파일키>`를 `fileKeys`에 직접 추가한다:
+
+  ```json
+  "figma": {
+    "token": "figd_...",
+    "teamIds": ["1234567890123456789"],
+    "fileKeys": [{ "key": "AbCdEf123456", "name": "온보딩 시안" }],
+    "userHandles": []
+  }
+  ```
+
+  또는 파일을 Drafts에서 팀 프로젝트로 옮기면 자동 스캔에 포함된다.
 - `userHandles`에는 Figma에서 보이는 **표시 이름(handle)** 을 넣는다 (이메일 아님).
 - 토큰을 파일에 두기 싫으면 `token`을 `""`로 두고 환경변수를 쓴다:
   Windows `setx FIGMA_TOKEN "figd_..."` (설정 후 터미널 재시작),
@@ -245,6 +259,10 @@ macOS `~/.claude/weekly-report/config.json`
 ## 변경 이력
 
 전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
+
+### 1.5.0 — 2026-08-07
+- **Drafts 파일 지원**: 팀 API에 잡히지 않는 Drafts 파일을 `figma.fileKeys`로 직접 지정해
+  스캔 가능. 실계정 end-to-end 검증 완료.
 
 ### 1.4.0 — 2026-08-07
 - **Figma 연동(옵션)**: `config.json`의 `figma` 섹션을 채우면 Figma 파일 버전 히스토리를

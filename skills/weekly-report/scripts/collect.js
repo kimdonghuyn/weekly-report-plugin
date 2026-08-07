@@ -63,11 +63,13 @@ async function run({ argv = process.argv.slice(2), homeDir = os.homedir(), figma
   const figmaConfig = config.figma || {};
   const figmaToken = process.env.FIGMA_TOKEN || figmaConfig.token || '';
   const figmaTeamIds = figmaConfig.teamIds || [];
-  const figmaConfigured = Boolean(figmaToken) && figmaTeamIds.length > 0;
+  const figmaFileKeys = figmaConfig.fileKeys || [];
+  const figmaConfigured = Boolean(figmaToken) && (figmaTeamIds.length > 0 || figmaFileKeys.length > 0);
   const figma = figmaConfigured
     ? await getFigmaActivity({
         token: figmaToken,
         teamIds: figmaTeamIds,
+        fileKeys: figmaFileKeys,
         userHandles: figmaConfig.userHandles || [],
         since: week.start,
         until: week.end,

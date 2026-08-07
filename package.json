@@ -1,6 +1,6 @@
 {
   "name": "weekly-report-plugin",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Weekly work report generator for Claude Code and Codex CLI — aggregates git commits, session activity, manual logs, and Figma design activity into per-project reports.",
   "private": true,
   "license": "MIT",

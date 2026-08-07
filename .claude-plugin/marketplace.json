@@ -9,7 +9,7 @@
       "name": "weekly-report",
       "source": "./",
       "description": "Aggregate git commits, Claude Code, Codex CLI and Gemini CLI session activity, manual work logs, and optional Figma design activity across projects into a per-project weekly report.",
-      "version": "1.4.0"
+      "version": "1.5.0"
     }
   ]
 }

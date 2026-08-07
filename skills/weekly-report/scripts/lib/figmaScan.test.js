@@ -169,7 +169,7 @@ test('follows pagination while the oldest fetched version is still inside the we
   );
 });
 
-test('returns [] when token or teamIds are missing', async () => {
+test('returns [] when token is missing or no teamIds/fileKeys are given', async () => {
   const { fetchJson, calls } = makeFetcher({});
   assert.deepEqual(
     await getFigmaActivity({ token: '', teamIds: ['T1'], since: SINCE, until: UNTIL, fetchJson }),
@@ -180,6 +180,57 @@ test('returns [] when token or teamIds are missing', async () => {
     []
   );
   assert.deepEqual(calls, []);
+});
+
+test('scans explicitly listed fileKeys (e.g. drafts) even without teamIds', async () => {
+  const responses = {
+    [`${BASE}/v1/files/DRAFT1/versions`]: {
+      versions: [
+        {
+          id: 'v1',
+          created_at: '2026-08-05T10:00:00Z',
+          label: '초안 정리',
+          description: '',
+          user: { id: 'u1', handle: 'designer-kim' },
+        },
+      ],
+      pagination: {},
+    },
+    [`${BASE}/v1/files/DRAFT2/versions`]: { versions: [], pagination: {} },
+  };
+  const { fetchJson } = makeFetcher(responses);
+
+  const activity = await getFigmaActivity({
+    token: 'tok',
+    teamIds: [],
+    fileKeys: [{ key: 'DRAFT1', name: '온보딩 시안' }, 'DRAFT2'],
+    since: SINCE,
+    until: UNTIL,
+    fetchJson,
+  });
+
+  assert.equal(activity.length, 1);
+  assert.equal(activity[0].fileName, '온보딩 시안');
+  assert.equal(activity[0].projectName, 'Drafts');
+  assert.equal(activity[0].versions[0].label, '초안 정리');
+});
+
+test('does not scan a fileKey twice when the team scan already covered it', async () => {
+  const responses = baseResponses();
+  const { fetchJson, calls } = makeFetcher(responses);
+
+  const activity = await getFigmaActivity({
+    token: 'tok',
+    teamIds: ['T1'],
+    fileKeys: ['F1'],
+    since: SINCE,
+    until: UNTIL,
+    fetchJson,
+  });
+
+  assert.equal(activity.length, 1);
+  const versionCalls = calls.filter((u) => u === `${BASE}/v1/files/F1/versions`);
+  assert.equal(versionCalls.length, 1);
 });
 
 test('skips teams and files that fail to fetch instead of throwing', async () => {

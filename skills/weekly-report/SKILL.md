@@ -90,6 +90,10 @@ description: Use when the user asks for a weekly report, work summary, or an "�
     충분). 파일에 저장하기 싫으면 `FIGMA_TOKEN` 환경변수로 대신 설정할 수 있다.
   - `teamIds`: Figma에서 팀 페이지를 열면 URL이 `figma.com/files/team/<숫자>/...` 형태인데
     그 숫자가 team id다. 여러 팀 가능.
+  - `fileKeys`: **Drafts(내 초안)에 있는 파일은 팀 API에 잡히지 않으므로** 여기에 직접
+    추가한다. 파일을 열었을 때 URL `figma.com/design/<파일키>/<파일명>` 의 `<파일키>` 부분을
+    쓰며, `{ "key": "...", "name": "표시할 이름" }` 객체 또는 키 문자열로 넣는다. 사용자가
+    "이 파일도 추적해줘"라며 Figma 링크를 주면 여기서 키를 추출해 추가하면 된다.
   - `userHandles`: 본인 활동만 보려면 Figma 표시 이름(handle)을 넣는다. 빈 배열이면 그 팀
     파일에서 작업한 모든 사람의 활동이 잡힌다 — 팀 보고서를 만들 때는 비워둔다.
   - 실행자 토큰 하나로 팀 전체 파일을 조회하고 버전의 작성자로 사람을 구분하므로, 팀원들이
