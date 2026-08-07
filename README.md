@@ -95,6 +95,127 @@ Codex 설치는 클론한 저장소에서 `git pull` 후 설치 명령을 다시
 /weekly-report --start=2026-06-29
 ```
 
+## Figma 연동 설정 가이드
+
+Figma 작업(디자인)도 보고서에 넣고 싶을 때 설정한다. 필요 없으면 이 섹션은 건너뛰어도
+된다 — 설정하지 않으면 Figma 소스는 조용히 무시된다.
+
+> 💡 **가장 쉬운 방법**: 아래를 직접 하지 않아도, Claude/Codex에게
+> **"주간보고에 Figma도 포함되게 설정해줘"** 라고 말하면 대화로 안내받으며 설정할 수 있다.
+
+### 1) 토큰 발급 (1회, 약 1분)
+
+1. [figma.com](https://figma.com) 로그인 → 좌측 상단 프로필 클릭 → **Settings**
+2. **Security** 탭 → **Personal access tokens** → **Generate new token**
+3. 이름은 자유(예: `weekly-report`), 권한은 **File content: Read-only** 면 충분
+4. 생성 직후 한 번만 표시되는 `figd_...` 문자열을 복사
+
+⚠️ 토큰은 비밀번호처럼 다룬다. git에 커밋하거나 채팅에 붙여넣지 말 것.
+
+### 2) Team ID 찾기
+
+Figma 좌측 사이드바에서 팀 이름을 클릭하면 주소창이 이런 형태가 된다:
+
+```
+https://www.figma.com/files/team/1234567890123456789/우리팀
+                              └────────┬────────┘
+                                  이 숫자가 team id
+```
+
+### 3) config.json 채우기 — 상황별 예시
+
+설정 파일 위치: Windows `C:\Users\<이름>\.claude\weekly-report\config.json`,
+macOS `~/.claude/weekly-report/config.json`
+
+**예시 A — 개발 + 디자인을 둘 다 하는 사람** (git 커밋과 본인 Figma 작업을 함께):
+
+```json
+{
+  "scanRoots": ["C:/Users/kim/projects"],
+  "authorEmail": "kim@example.com",
+  "weekStartsOn": "monday",
+  "archivePath": "C:/Users/kim/Documents/WeeklyReports",
+  "figma": {
+    "token": "figd_abc123...",
+    "teamIds": ["1234567890123456789"],
+    "userHandles": ["김철수"]
+  }
+}
+```
+
+**예시 B — 디자이너 (git을 아예 안 쓰는 환경)**: `scanRoots`를 비워두면 Figma와
+수동 기록만으로 보고서가 만들어진다:
+
+```json
+{
+  "scanRoots": [],
+  "authorEmail": "",
+  "weekStartsOn": "monday",
+  "archivePath": "C:/Users/lee/Documents/WeeklyReports",
+  "figma": {
+    "token": "figd_def456...",
+    "teamIds": ["1234567890123456789"],
+    "userHandles": ["이영희"]
+  }
+}
+```
+
+**예시 C — 팀장이 팀 전체 디자인 활동을 한 번에 보기**: `userHandles`를 빈 배열로
+두면 그 팀 파일에서 작업한 **모든 사람**이 잡힌다. 토큰은 팀장 것 하나면 되고,
+팀원들은 아무것도 설치·발급할 필요가 없다:
+
+```json
+{
+  "figma": {
+    "token": "figd_ghi789...",
+    "teamIds": ["1234567890123456789", "9876543210987654321"],
+    "userHandles": []
+  }
+}
+```
+
+- `userHandles`에는 Figma에서 보이는 **표시 이름(handle)** 을 넣는다 (이메일 아님).
+- 토큰을 파일에 두기 싫으면 `token`을 `""`로 두고 환경변수를 쓴다:
+  Windows `setx FIGMA_TOKEN "figd_..."` (설정 후 터미널 재시작),
+  macOS `export FIGMA_TOKEN="figd_..."` 를 셸 프로필에 추가.
+
+### 4) 실행하면 이렇게 나온다
+
+```
+/weekly-report
+```
+
+```markdown
+# 2026-W32 주간 보고
+
+## shopping-app (git)
+- 결제 모듈 리팩터링
+  - PG사 응답 오류 처리 보강
+  ...
+
+## 디자인 (Figma)
+
+### 앱 디자인 / 로그인 화면.fig
+- 로그인 개편 시안 2차 (8/5, 김철수)
+- 소셜 로그인 버튼 배치 수정 (8/6, 김철수)
+
+### 앱 디자인 / 온보딩 플로우.fig
+- 이영희: 화~목 3일에 걸쳐 작업 (버전 12회 저장)
+```
+
+버전에 이름이 붙어 있으면(위 "로그인 개편 시안 2차") 커밋 메시지처럼 그대로 활용되고,
+이름 없는 자동 저장만 있으면 작업 빈도로 요약된다.
+
+### 팁
+
+- **버전에 이름을 붙이는 습관**: Figma에서 작업을 마무리할 때 `Ctrl+Alt+S`
+  (macOS `Cmd+Opt+S`)로 버전 이름을 남기면 보고서 품질이 크게 올라간다.
+  예) "메인 배너 A/B 시안", "아이콘 세트 정리 완료"
+- **무료(Starter) 플랜도 OK**: 버전 히스토리 조회가 30일로 제한되지만 주간 보고서는
+  최근 7일만 보므로 문제없다.
+- **접근 범위**: 토큰은 그 계정이 볼 수 있는 파일만 조회한다. 팀 전체 집계(예시 C)를
+  하려면 실행자가 해당 팀 파일들에 접근 가능해야 한다.
+
 ## 동작 방식
 
 - 설정 파일 `~/.claude/weekly-report/config.json`이 최초 실행 시 자동 생성된다. 이 파일은
