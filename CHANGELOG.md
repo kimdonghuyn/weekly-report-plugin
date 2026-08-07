@@ -3,7 +3,11 @@
 ## 1.3.0 — 2026-08-07
 
 - **Codex CLI 지원**: 두 스킬을 Codex CLI에서도 그대로 쓸 수 있도록 이식성 개선.
-  - `install-codex.js` 설치 스크립트 추가 — `skills/` 아래의 스킬 폴더를
+  - Codex 플러그인 매니페스트 `.codex-plugin/plugin.json` 추가 (Codex 공식
+    `validate_plugin.py` 검증 통과). `node install-codex.js --plugin` 으로
+    `~/plugins/weekly-report/` 복사 + 개인 마켓플레이스(`~/.agents/plugins/marketplace.json`)
+    등록까지 수행하며, 이후 `codex plugin add weekly-report@personal` 로 설치한다.
+  - `install-codex.js` 설치 스크립트 추가 — 기본 모드는 `skills/` 아래의 스킬 폴더를
     `~/.codex/skills/`(또는 `--target=` 로 지정한 디렉터리, 예: `~/.agents/skills`)로
     복사한다. 재실행 시 기존 폴더를 지우고 새로 복사하므로 업데이트에도 그대로 사용.
   - SKILL.md의 스크립트 참조를 Claude 전용 변수 의존에서 "이 SKILL.md가 있는 폴더 기준

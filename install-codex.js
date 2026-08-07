@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 'use strict';
-// Codex CLI에는 Claude Code의 플러그인/마켓플레이스 개념이 없으므로,
-// skills/ 아래의 각 스킬 폴더를 Codex 스킬 디렉터리로 복사하는 것으로 설치한다.
-// 사용법: node install-codex.js [--target=<스킬 디렉터리>]
-//   기본 대상: ~/.codex/skills
+// Codex CLI 설치 스크립트. 두 가지 모드를 지원한다:
+//   node install-codex.js                  스킬만 ~/.codex/skills 로 복사 (기본)
+//   node install-codex.js --target=<DIR>   스킬을 지정 디렉터리로 복사
+//   node install-codex.js --plugin         정식 Codex 플러그인으로 설치
+//     (~/plugins/weekly-report 복사 + ~/.agents/plugins/marketplace.json 등록,
+//      이후 `codex plugin add weekly-report@<marketplace>` 실행 필요)
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -23,8 +25,60 @@ function installSkills({ skillsSrcDir, targetDir }) {
   return installed;
 }
 
+function installPlugin({ repoRoot, pluginsDir, marketplacePath }) {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(repoRoot, '.codex-plugin', 'plugin.json'), 'utf8')
+  );
+  const name = manifest.name;
+  const dest = path.join(pluginsDir, name);
+
+  fs.rmSync(dest, { recursive: true, force: true });
+  fs.mkdirSync(pluginsDir, { recursive: true });
+  fs.cpSync(repoRoot, dest, {
+    recursive: true,
+    filter: (src) => {
+      const rel = path.relative(repoRoot, src);
+      return rel !== '.git' && !rel.startsWith('.git' + path.sep) && rel !== 'node_modules';
+    },
+  });
+
+  let market;
+  if (fs.existsSync(marketplacePath)) {
+    market = JSON.parse(fs.readFileSync(marketplacePath, 'utf8'));
+  } else {
+    fs.mkdirSync(path.dirname(marketplacePath), { recursive: true });
+    market = { name: 'personal', interface: { displayName: 'Personal' }, plugins: [] };
+  }
+  const entry = {
+    name,
+    source: { source: 'local', path: `./plugins/${name}` },
+    policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' },
+    category: 'Productivity',
+  };
+  const existing = market.plugins.findIndex((p) => p.name === name);
+  if (existing >= 0) market.plugins[existing] = entry;
+  else market.plugins.push(entry);
+  fs.writeFileSync(marketplacePath, JSON.stringify(market, null, 2) + '\n', 'utf8');
+
+  return { name, dest, marketplacePath, marketplaceName: market.name };
+}
+
 function main() {
-  const targetArg = process.argv.slice(2).find((a) => a.startsWith('--target='));
+  const args = process.argv.slice(2);
+  if (args.includes('--plugin')) {
+    const result = installPlugin({
+      repoRoot: __dirname,
+      pluginsDir: path.join(os.homedir(), 'plugins'),
+      marketplacePath: path.join(os.homedir(), '.agents', 'plugins', 'marketplace.json'),
+    });
+    console.log(`installed plugin ${result.name} -> ${result.dest}`);
+    console.log(`marketplace entry updated in ${result.marketplacePath}`);
+    console.log('');
+    console.log('Next step — register it with Codex:');
+    console.log(`  codex plugin add ${result.name}@${result.marketplaceName}`);
+    return;
+  }
+  const targetArg = args.find((a) => a.startsWith('--target='));
   const targetDir = targetArg
     ? path.resolve(targetArg.slice('--target='.length))
     : path.join(os.homedir(), '.codex', 'skills');
@@ -41,4 +95,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { installSkills };
+module.exports = { installSkills, installPlugin };

@@ -33,25 +33,37 @@ npm test
 
 ### Codex CLI
 
-Codex에는 마켓플레이스 개념이 없으므로 스킬 폴더를 직접 복사해 설치한다. 저장소를
-클론한 뒤 설치 스크립트를 실행하면 `skills/` 아래의 두 스킬이 `~/.codex/skills/`로
-복사된다:
+저장소를 먼저 클론한다:
 
 ```
 git clone https://github.com/kimdonghuyn/weekly-report-plugin.git
 cd weekly-report-plugin
+```
+
+**방법 A — 정식 플러그인으로 설치 (권장, 플러그인 지원 버전의 Codex 필요):**
+
+```
+node install-codex.js --plugin
+codex plugin add weekly-report@personal
+```
+
+`--plugin` 은 저장소를 `~/plugins/weekly-report/`로 복사하고 개인 마켓플레이스
+(`~/.agents/plugins/marketplace.json`)에 항목을 등록한다. 이 저장소에는 Codex 플러그인
+매니페스트(`.codex-plugin/plugin.json`)가 포함되어 있어 `codex plugin add` 후 두 스킬이
+플러그인으로 인식된다. 설치 후 새 스레드에서 사용한다.
+
+**방법 B — 스킬만 복사 (플러그인 미지원 버전 포함, 스킬만 지원하면 동작):**
+
+```
 node install-codex.js
 ```
 
-다른 위치(예: 에이전트 공용 스킬 디렉터리 `~/.agents/skills`)에 설치하려면:
-
-```
-node install-codex.js --target=<디렉터리>
-```
+`skills/` 아래의 두 스킬이 `~/.codex/skills/`로 복사된다. 다른 위치(예: 에이전트 공용
+스킬 디렉터리 `~/.agents/skills`)에 설치하려면 `--target=<디렉터리>` 를 사용한다.
 
 설치 후 Codex에서 `/skills` 로 인식 여부를 확인할 수 있고, `$weekly-report` 멘션이나
 "이번 주 뭐했는지 정리해줘" 같은 자연어로 호출한다. 스킬이 바로 보이지 않으면 Codex를
-재시작한다.
+재시작한다. 두 방법을 동시에 쓰면 스킬이 중복 인식될 수 있으니 하나만 선택한다.
 
 설정 파일(`~/.claude/weekly-report/config.json`)과 수동 로그는 Claude Code와 Codex가
 같은 것을 공유하므로, 한쪽에서 기록하고 다른 쪽에서 보고서를 뽑아도 결과가 같다.
@@ -67,8 +79,9 @@ Claude Code에서 새 버전이 나왔을 때 받는 방법:
 `/plugin` 명령으로 Marketplaces 탭에 들어가면 "Enable auto-update" 토글로 자동 업데이트를
 켤 수도 있다 (서드파티 마켓플레이스는 기본값이 꺼짐).
 
-Codex 설치는 클론한 저장소에서 `git pull` 후 `node install-codex.js` 를 다시 실행하면
-된다 (기존 스킬 폴더를 지우고 새로 복사한다).
+Codex 설치는 클론한 저장소에서 `git pull` 후 설치 명령을 다시 실행하면 된다
+(방법 A는 `node install-codex.js --plugin` 후 `codex plugin add weekly-report@personal`,
+방법 B는 `node install-codex.js` — 기존 폴더를 지우고 새로 복사한다).
 
 ## 사용법
 
@@ -107,9 +120,11 @@ Codex 설치는 클론한 저장소에서 `git pull` 후 `node install-codex.js`
 전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
 
 ### 1.3.0 — 2026-08-07
-- **Codex CLI 지원**: `install-codex.js` 설치 스크립트 추가 (`~/.codex/skills/`로 스킬 복사,
-  `--target=` 으로 위치 지정 가능). SKILL.md의 스크립트 참조를 Claude/Codex 양쪽에서
-  동작하는 상대 경로 서술로 변경. 설정과 수동 로그는 두 에이전트가 공유.
+- **Codex CLI 지원**: Codex 플러그인 매니페스트(`.codex-plugin/plugin.json`) 추가,
+  `install-codex.js` 설치 스크립트 추가 (`--plugin` 으로 정식 플러그인 설치, 기본 모드는
+  `~/.codex/skills/`로 스킬 복사, `--target=` 으로 위치 지정 가능). SKILL.md의 스크립트
+  참조를 Claude/Codex 양쪽에서 동작하는 상대 경로 서술로 변경. 설정과 수동 로그는 두
+  에이전트가 공유.
 
 ### 1.2.0 — 2026-07-24
 - **Gemini CLI 세션 지원**: `~/.gemini/tmp/<id>/`의 대화 기록을 스캔해 Claude Code·Codex
