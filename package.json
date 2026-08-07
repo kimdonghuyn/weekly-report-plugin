@@ -1,13 +1,13 @@
 {
   "name": "weekly-report-plugin",
-  "version": "1.2.0",
-  "description": "Weekly work report generator for Claude Code — aggregates git commits, session activity, and manual logs into per-project reports.",
+  "version": "1.3.0",
+  "description": "Weekly work report generator for Claude Code and Codex CLI — aggregates git commits, session activity, and manual logs into per-project reports.",
   "private": true,
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test \"skills/**/*.test.js\""
+    "test": "node --test \"skills/**/*.test.js\" \"install-codex.test.js\""
   }
 }

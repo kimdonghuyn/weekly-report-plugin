@@ -1,6 +1,6 @@
 ---
 name: weekly-report
-description: Use when the user asks for a weekly report, work summary, or an "이번 주 뭐했는지 정리해줘" style request spanning multiple projects. Aggregates git commits, Claude Code session activity, and manual weekly-log entries into a per-project report.
+description: Use when the user asks for a weekly report, work summary, or an "이번 주 뭐했는지 정리해줘" style request spanning multiple projects. Aggregates git commits, Claude Code/Codex CLI/Gemini CLI session activity, and manual weekly-log entries into a per-project report.
 ---
 
 # Weekly Report
@@ -13,8 +13,12 @@ description: Use when the user asks for a weekly report, work summary, or an "�
 1. 데이터 수집 스크립트를 실행한다:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/skills/weekly-report/scripts/collect.js"
+   node "<스킬 폴더>/scripts/collect.js"
    ```
+
+   `<스킬 폴더>`는 이 SKILL.md 파일이 있는 디렉터리다. Claude Code 플러그인으로 설치된
+   경우 `${CLAUDE_PLUGIN_ROOT}/skills/weekly-report` 가 그 경로이고, Codex CLI처럼 스킬
+   폴더를 직접 복사해 설치한 환경에서는 이 파일을 읽어온 경로를 기준으로 실행한다.
 
    특정 주를 지정하려면 그 주에 포함된 아무 날짜나 `--start=YYYY-MM-DD` 로 넘긴다.
 

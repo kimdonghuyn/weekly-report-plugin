@@ -14,8 +14,12 @@ description: Use when the user reports something they just did or wants it logge
 2. 아래 명령을 실행한다:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/skills/weekly-log/scripts/append.js" "<프로젝트명>" "<작업 내용 한 줄>"
+   node "<스킬 폴더>/scripts/append.js" "<프로젝트명>" "<작업 내용 한 줄>"
    ```
+
+   `<스킬 폴더>`는 이 SKILL.md 파일이 있는 디렉터리다. Claude Code 플러그인으로 설치된
+   경우 `${CLAUDE_PLUGIN_ROOT}/skills/weekly-log` 가 그 경로이고, Codex CLI처럼 스킬
+   폴더를 직접 복사해 설치한 환경에서는 이 파일을 읽어온 경로를 기준으로 실행한다.
 
 3. 스크립트가 출력한 파일 경로를 확인만 하고, 사용자에게는 짧게 "기록했습니다" 정도로만
    확인해준다. 장황한 설명은 불필요하다.

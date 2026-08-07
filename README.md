@@ -1,6 +1,6 @@
 # weekly-report-plugin
 
-Claude Code용 주간 업무 보고서 플러그인. 여러 git 프로젝트에 걸친 한 주간의 작업(git 커밋,
+Claude Code·Codex CLI용 주간 업무 보고서 플러그인. 여러 git 프로젝트에 걸친 한 주간의 작업(git 커밋,
 Claude Code/Codex CLI/Gemini CLI 세션에서 실제로 요청한 문구, 수동 기록)을 모아 프로젝트별로 정리된 보고서를 생성한다.
 
 ## 포함된 스킬
@@ -12,7 +12,7 @@ Claude Code/Codex CLI/Gemini CLI 세션에서 실제로 요청한 문구, 수동
 
 ## 요구 사항
 
-- Windows 또는 macOS의 Claude Code
+- Windows 또는 macOS의 Claude Code 또는 Codex CLI (스킬 지원 버전)
 - Node.js 18 이상 (스크립트 실행 및 `node --test` 러너)
 - git (커밋 수집)
 
@@ -24,14 +24,41 @@ npm test
 
 ## 설치
 
+### Claude Code
+
 ```
 /plugin marketplace add kimdonghuyn/weekly-report-plugin
 /plugin install weekly-report@weekly-report-plugin
 ```
 
+### Codex CLI
+
+Codex에는 마켓플레이스 개념이 없으므로 스킬 폴더를 직접 복사해 설치한다. 저장소를
+클론한 뒤 설치 스크립트를 실행하면 `skills/` 아래의 두 스킬이 `~/.codex/skills/`로
+복사된다:
+
+```
+git clone https://github.com/kimdonghuyn/weekly-report-plugin.git
+cd weekly-report-plugin
+node install-codex.js
+```
+
+다른 위치(예: 에이전트 공용 스킬 디렉터리 `~/.agents/skills`)에 설치하려면:
+
+```
+node install-codex.js --target=<디렉터리>
+```
+
+설치 후 Codex에서 `/skills` 로 인식 여부를 확인할 수 있고, `$weekly-report` 멘션이나
+"이번 주 뭐했는지 정리해줘" 같은 자연어로 호출한다. 스킬이 바로 보이지 않으면 Codex를
+재시작한다.
+
+설정 파일(`~/.claude/weekly-report/config.json`)과 수동 로그는 Claude Code와 Codex가
+같은 것을 공유하므로, 한쪽에서 기록하고 다른 쪽에서 보고서를 뽑아도 결과가 같다.
+
 ## 업데이트
 
-새 버전이 나왔을 때 받는 방법:
+Claude Code에서 새 버전이 나왔을 때 받는 방법:
 
 ```
 /plugin marketplace update weekly-report-plugin
@@ -39,6 +66,9 @@ npm test
 
 `/plugin` 명령으로 Marketplaces 탭에 들어가면 "Enable auto-update" 토글로 자동 업데이트를
 켤 수도 있다 (서드파티 마켓플레이스는 기본값이 꺼짐).
+
+Codex 설치는 클론한 저장소에서 `git pull` 후 `node install-codex.js` 를 다시 실행하면
+된다 (기존 스킬 폴더를 지우고 새로 복사한다).
 
 ## 사용법
 
@@ -75,6 +105,11 @@ npm test
 ## 변경 이력
 
 전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
+
+### 1.3.0 — 2026-08-07
+- **Codex CLI 지원**: `install-codex.js` 설치 스크립트 추가 (`~/.codex/skills/`로 스킬 복사,
+  `--target=` 으로 위치 지정 가능). SKILL.md의 스크립트 참조를 Claude/Codex 양쪽에서
+  동작하는 상대 경로 서술로 변경. 설정과 수동 로그는 두 에이전트가 공유.
 
 ### 1.2.0 — 2026-07-24
 - **Gemini CLI 세션 지원**: `~/.gemini/tmp/<id>/`의 대화 기록을 스캔해 Claude Code·Codex

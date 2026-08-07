@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-08-07
+
+- **Codex CLI 지원**: 두 스킬을 Codex CLI에서도 그대로 쓸 수 있도록 이식성 개선.
+  - `install-codex.js` 설치 스크립트 추가 — `skills/` 아래의 스킬 폴더를
+    `~/.codex/skills/`(또는 `--target=` 로 지정한 디렉터리, 예: `~/.agents/skills`)로
+    복사한다. 재실행 시 기존 폴더를 지우고 새로 복사하므로 업데이트에도 그대로 사용.
+  - SKILL.md의 스크립트 참조를 Claude 전용 변수 의존에서 "이 SKILL.md가 있는 폴더 기준
+    상대 경로" 서술로 변경 — Claude Code(`${CLAUDE_PLUGIN_ROOT}`)와 Codex 양쪽에서 동작.
+  - 설정(`~/.claude/weekly-report/config.json`)과 수동 로그는 두 에이전트가 공유한다.
+
 ## 1.2.0 — 2026-07-24
 
 - Gemini CLI 세션 기록(`~/.gemini/tmp/<id>/`)을 스캔해서, Claude Code·Codex CLI 세션
