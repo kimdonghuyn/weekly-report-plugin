@@ -31,7 +31,19 @@ description: Use when the user asks for a weekly report, work summary, or an "�
      "archivePath": "<config.json의 archivePath 값>",
      "needsSetup": false,
      "projects": [
-       { "repoPath": "...", "repoName": "...", "commits": [...], "sessionMessages": [...], "manualEntries": [...] }
+       {
+         "repoPath": "...", "repoName": "...", "worktrees": ["..."],
+         "commits": [...], "sessionMessages": [...], "manualEntries": [...],
+         "branches": {
+           "base": "develop", "releaseBranch": "main", "unreleasedCount": 26,
+           "pendingBranches": [
+             { "name": "feature/x", "local": true, "pushed": false, "ownCommits": 2, "lastCommitDate": "...", "lastMessage": "..." }
+           ]
+         }
+       }
+     ],
+     "unscopedSessions": [
+       { "source": "codex", "sessionId": "...", "cwd": "C:\\project", "candidateRepos": ["..."], "messages": [ { "timestamp": "...", "text": "..." } ] }
      ],
      "unmatched": [...],
      "figmaConfigured": false,
@@ -52,32 +64,60 @@ description: Use when the user asks for a weekly report, work summary, or an "�
    `git config --global user.email` 값으로 자동 채워지므로 보통 그대로 둬도 되지만, 커밋에
    쓰는 이메일이 다르면 이 값도 같이 확인한다.
 
-3. `projects` 배열의 각 프로젝트에 대해 `commits`(커밋 메시지), `sessionMessages`(그 주 동안
-   사용자가 Claude에게 실제로 요청한 문구), `manualEntries`(수동 기록)를 모두 참고해서 다음
-   스타일로 섹션을 작성한다:
+3. `unscopedSessions`가 있으면 먼저 프로젝트별로 나눈다. 여러 저장소를 담은 상위 폴더(예:
+   `C:\project`)에서 연 Claude Code·Codex·Gemini 세션이라 어느 저장소 작업인지 기계적으로 정할 수
+   없어서 따로 넘어온 것이다. 각 메시지를 `candidateRepos` 중 하나에 배정한다. 근거로 쓸 것:
+   - 메시지에 나온 경로·저장소 이름·약칭 (예: "admin-fe", "be 쪽")
+   - 같은 시각대의 그 저장소 커밋
+   - 앞뒤 메시지의 흐름 ("수정해", "커밋해" 같은 후속 요청은 직전 주제를 따라간다)
+
+   배정한 메시지는 그 프로젝트의 `sessionMessages`와 똑같이 쓴다. 활동이 없어 `projects`에
+   없던 저장소라도 배정된 메시지가 있으면 섹션을 만든다. 끝내 어느 저장소인지 알 수 없거나
+   여러 저장소에 걸친 작업(공통 테스트 시나리오 등)은 "공통" 섹션으로 묶는다. **절대 버리지
+   않는다** — 사용자가 다른 도구에서 한 작업이 보고서에서 빠지는 가장 흔한 원인이다.
+
+4. `projects` 배열의 각 프로젝트에 대해 `commits`(커밋 메시지), `sessionMessages`(그 주 동안
+   사용자가 Claude Code·Codex·Gemini에게 실제로 요청한 문구), `manualEntries`(수동 기록)를 모두
+   참고해서 다음 스타일로 섹션을 작성한다:
    - 프로젝트명을 제목으로
    - 의미 단위로 묶은 카테고리를 불릿으로 (커밋 메시지를 그대로 나열하지 않는다)
    - 카테고리 아래 세부 작업은 하위 불릿으로
+   - 아직 병합되지 않은 브랜치의 작업은 `branches.pendingBranches`를 보고 "(미병합)"처럼 표시한다
 
-   활동이 전혀 없는 프로젝트는 이미 배열에서 빠져 있으므로 신경 쓸 필요 없다.
+   커밋 없이 세션에만 남은 작업(설계 검토, 원인 분석, 문서·테스트 시나리오 작성 등)도 실제
+   업무이므로 빠뜨리지 않는다. 활동이 전혀 없는 프로젝트는 이미 배열에서 빠져 있다.
 
-4. `figma` 배열이 비어 있지 않으면 "디자인 (Figma)" 섹션을 추가한다. Figma 프로젝트별로 묶고,
+5. 보고서 끝에 "차주 계획" 섹션을 저장소별로 작성한다. 근거로 쓸 것:
+   - `branches.pendingBranches`: 통합 브랜치(`base`)에 아직 들어가지 않은 본인 브랜치
+     → 병합·리뷰 대상
+   - `branches.unreleasedCount`: `base`에는 있지만 `releaseBranch`에는 없는 커밋 수 → 운영 반영 준비
+   - 세션 메시지에 남은 다음 단계 (예: "킥오프 후 분담 개발 시작", "테스트 진행")
+
+   추정한 계획이므로 실제 일정과 다를 수 있다는 점을 채팅 답변에서 한 줄로 알린다.
+
+6. `figma` 배열이 비어 있지 않으면 "디자인 (Figma)" 섹션을 추가한다. Figma 프로젝트별로 묶고,
    파일 단위로 작업 내용을 정리한다. 버전 `label`이 있으면 그것이 커밋 메시지 역할을 하므로
    우선 활용하고, 라벨 없는 버전들은 "N회 작업 저장" 정도로 요약한다. 여러 사람의 활동이
    섞여 있으면(`user.handle`이 여러 명) 사람별로 하위 구분해서 정리한다.
 
-5. `unmatched` 배열(어떤 저장소와도 매칭되지 않은 수동 로그)이 있으면 맨 마지막에 "기타" 섹션으로
+7. `unmatched` 배열(어떤 저장소와도 매칭되지 않은 수동 로그)이 있으면 맨 마지막에 "기타" 섹션으로
    추가한다. 프로젝트명 오타나 `scanRoots`에 없는 경로 때문에 매칭이 안 됐을 수 있으니, 항목이
    있으면 왜 매칭되지 않았는지 짐작되는 이유를 함께 언급해준다.
 
-6. 완성된 보고서를 마크다운으로 채팅에 출력한다.
+8. 완성된 보고서를 마크다운으로 채팅에 출력한다.
 
-7. 동시에 같은 내용을 `<archivePath>/<weekLabel>.md` 파일로 저장한다 (디렉터리가 없으면 생성하고,
+9. 동시에 같은 내용을 `<archivePath>/<weekLabel>.md` 파일로 저장한다 (디렉터리가 없으면 생성하고,
    파일이 이미 있으면 덮어쓴다 — 그 주의 최신 상태를 반영하는 것이 목적이므로 append 하지 않는다).
 
 ## 참고
 
-- 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만 포함되어 있다.
+- 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만 포함되어 있다. 체크아웃된 브랜치뿐 아니라
+  모든 로컬·원격 브랜치에서 모으므로, 아직 병합하지 않은 feature 브랜치의 커밋도 들어 있다.
+- 저장소는 `scanRoots` 아래 `scanDepth`(기본 3) 단계까지 찾는다 (`<root>/CMS/<repo>`처럼 묶인
+  구조도 잡힌다). 같은 저장소의 git worktree는 하나로 합쳐 `worktrees`에 경로를 적어 두며,
+  worktree에서 연 세션도 그 저장소 활동으로 집계된다.
+- Codex 세션은 `CODEX_HOME`, `~/.codex`, Orca가 관리하는 Codex 홈을 자동으로 모두 읽는다. 그 밖의
+  위치에서 Codex를 실행한다면 `config.json`의 `codexHomes` 배열에 그 홈 폴더를 추가한다.
 - `sessionMessages`는 사용자가 그 주에 실제로 타이핑한 요청 문구다. 그대로 인용하지 말고 자연스러운
   보고서 문장으로 바꿔 쓴다.
 - 설정 파일은 `~/.claude/weekly-report/config.json`이며 최초 실행 시 자동 생성된다. 스캔 루트를

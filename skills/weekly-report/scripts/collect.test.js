@@ -238,3 +238,60 @@ test('run() reports needsSetup as false once scanRoots has at least one entry', 
 
   assert.equal(result.needsSetup, false);
 });
+
+test('run() finds grouped repos once, attributes worktree sessions, and surfaces parent-folder sessions', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wr-home5-'));
+  const scanRoot = path.join(homeDir, 'project');
+  const repo = path.join(scanRoot, 'CMS', 'cms-be');
+  makeRepoWithCommit(repo);
+  const worktree = path.join(homeDir, 'worktrees', 'cms-be-feature');
+  execFileSync('git', ['worktree', 'add', '-q', '-b', 'feature/x', worktree], { cwd: repo });
+  fs.writeFileSync(path.join(worktree, 'b.txt'), 'x');
+  execFileSync('git', ['add', 'b.txt'], { cwd: worktree });
+  execFileSync('git', ['commit', '-q', '-m', 'feature work'], { cwd: worktree });
+
+  const configDir = path.join(homeDir, '.claude', 'weekly-report');
+  fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(configDir, 'config.json'),
+    JSON.stringify({
+      scanRoots: [scanRoot, path.join(scanRoot, 'CMS')], // overlapping roots must not duplicate the repo
+      authorEmail: 'me@example.com',
+      weekStartsOn: 'monday',
+      archivePath: path.join(homeDir, 'archive'),
+    })
+  );
+
+  const now = new Date().toISOString();
+  const claudeDir = path.join(homeDir, '.claude', 'projects', 'worktree-session');
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(claudeDir, 'c1.jsonl'),
+    JSON.stringify({ type: 'user', cwd: worktree, timestamp: now, message: { role: 'user', content: 'worktree 에서 한 요청' } }) + '\n'
+  );
+
+  const codexHome = path.join(homeDir, 'AppData', 'Roaming', 'orca', 'codex-accounts', 'acc', 'home');
+  const [y, m, d] = now.slice(0, 10).split('-');
+  const rolloutDir = path.join(codexHome, 'sessions', y, m, d);
+  fs.mkdirSync(rolloutDir, { recursive: true });
+  const rollout = [
+    { timestamp: now, type: 'session_meta', payload: { id: 'x1', cwd: scanRoot } },
+    { timestamp: now, type: 'event_msg', payload: { type: 'item_completed', item: { type: 'UserMessage', content: [{ type: 'text', text: '상위 폴더에서 한 요청' }] } } },
+  ];
+  fs.writeFileSync(path.join(rolloutDir, 'rollout-x1.jsonl'), rollout.map((r) => JSON.stringify(r)).join('\n') + '\n');
+
+  const result = await run({ argv: [], homeDir, env: { APPDATA: path.join(homeDir, 'AppData', 'Roaming') }, platform: 'win32' });
+
+  assert.equal(result.projects.length, 1);
+  const project = result.projects[0];
+  assert.equal(project.repoName, 'cms-be');
+  assert.deepEqual(project.commits.map((c) => c.message), ['do the thing', 'feature work']);
+  assert.deepEqual(project.worktrees.map((p) => fs.realpathSync(p)), [fs.realpathSync(worktree)]);
+  assert.deepEqual(project.sessionMessages.map((m) => m.text), ['worktree 에서 한 요청']);
+  assert.deepEqual(project.branches.pendingBranches.map((b) => b.name), ['feature/x']);
+
+  assert.equal(result.unscopedSessions.length, 1);
+  assert.equal(result.unscopedSessions[0].source, 'codex');
+  assert.deepEqual(result.unscopedSessions[0].candidateRepos, ['cms-be']);
+  assert.deepEqual(result.unscopedSessions[0].messages.map((m) => m.text), ['상위 폴더에서 한 요청']);
+});
