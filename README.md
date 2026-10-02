@@ -240,12 +240,26 @@ macOS `~/.claude/weekly-report/config.json`
     예) Windows `["C:/project", "D:/work"]`, macOS `["/Users/you/projects", "/Users/you/work"]`
   - `authorEmail`: 커밋 작성자 필터. `git config --global user.email` 값으로 자동 채워진다.
   - `archivePath`: 보고서를 저장할 폴더. 기본값은 `~/Documents/WeeklyReports`.
-- git 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만 수집한다.
-- Claude Code(`~/.claude/projects`), Codex CLI(`~/.codex/sessions`), Gemini CLI(`~/.gemini/tmp`)
-  세션 기록에서 그 주에 사용자가 실제로 입력한 요청 문구를 함께 참고한다. Codex 쪽은 세션의
-  `cwd`로 프로젝트를 매칭하며, 다른 도구에서 가져온("임포트된") 세션은 집계에서 제외한다.
-  Gemini 쪽은 프로젝트별 디렉터리의 `.project_root`·세션 메타의 `directories`·`projects.json`으로
-  프로젝트를 매칭하고, 연속 로그인 `chats/`를 우선 쓰되 없으면 `logs.json`으로 폴백한다.
+  - `scanDepth` (선택, 기본 3): `scanRoots` 아래로 저장소를 찾아 내려가는 깊이.
+    `C:/project/CMS/<repo>`처럼 고객사·팀 폴더로 묶인 구조도 그대로 잡힌다.
+  - `codexHomes` (선택): 자동으로 찾지 못하는 위치에서 Codex를 실행한다면 그 Codex 홈
+    폴더(`sessions/`가 들어 있는 폴더)를 추가한다.
+- git 커밋은 설정된 `authorEmail`과 일치하는 본인 커밋만, 모든 로컬·원격 브랜치에서 수집한다
+  (아직 병합하지 않은 feature 브랜치 작업도 포함). 같은 저장소의 git worktree는 한 프로젝트로
+  합쳐 중복 집계하지 않는다.
+- 저장소마다 통합 브랜치(`develop`, 없으면 `main`/`master`)에 아직 들어가지 않은 본인 브랜치와
+  운영 미반영 커밋 수를 함께 모아, 보고서의 "차주 계획" 섹션 근거로 쓴다.
+- Claude Code(`~/.claude/projects`), Codex CLI, Gemini CLI(`~/.gemini/tmp`) 세션 기록에서 그 주에
+  사용자가 실제로 입력한 요청 문구를 함께 참고한다. 자동 삽입된 메시지(대화 압축 요약, 작업
+  알림, 슬래시 명령 출력 등)는 제외한다.
+  - 세션을 연 폴더(`cwd`)가 저장소나 그 하위 폴더, 또는 그 저장소의 worktree면 해당 프로젝트
+    활동으로 집계한다.
+  - 여러 저장소를 담은 상위 폴더(예: `C:/project`)에서 연 세션은 `unscopedSessions`로 따로
+    넘기고, 보고서를 쓸 때 메시지 내용을 보고 프로젝트별로 나눈다.
+  - Codex는 `CODEX_HOME`, `~/.codex`, Orca가 관리하는 Codex 홈을 모두 읽는다. 구버전·신버전
+    기록 형식을 모두 지원하고, 다른 도구에서 가져온("임포트된") 세션은 집계에서 제외한다.
+  - Gemini는 프로젝트별 디렉터리의 `.project_root`·세션 메타의 `directories`·`projects.json`으로
+    폴더를 찾고, 연속 로그인 `chats/`를 우선 쓰되 없으면 `logs.json`으로 폴백한다.
 - `weekly-log` 스킬로 남긴 수동 기록도 함께 집계되며, 어떤 저장소와도 매칭되지 않는 기록은
   보고서 마지막에 "기타" 섹션으로 추가된다.
 - **Figma 연동(옵션)**: `config.json`의 `figma` 섹션에 개인 액세스 토큰(또는 `FIGMA_TOKEN`
@@ -259,6 +273,11 @@ macOS `~/.claude/weekly-report/config.json`
 ## 변경 이력
 
 전체 내역은 [CHANGELOG.md](./CHANGELOG.md) 참고.
+
+### 1.6.0 — 2026-10-02
+- **빠지던 작업 수집**: 묶음 폴더 아래 저장소, 미병합 브랜치 커밋, Orca·신버전 Codex 세션,
+  상위 폴더에서 연 세션까지 수집. worktree 중복 집계 제거.
+- **차주 계획 근거 데이터**: 저장소별 미병합 본인 브랜치와 운영 미반영 커밋 수를 함께 반환.
 
 ### 1.5.0 — 2026-08-07
 - **Drafts 파일 지원**: 팀 API에 잡히지 않는 Drafts 파일을 `figma.fileKeys`로 직접 지정해

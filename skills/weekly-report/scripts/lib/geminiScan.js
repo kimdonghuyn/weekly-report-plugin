@@ -141,14 +141,13 @@ function collectFromLogs(projectDir, since, until) {
 
 // Gemini CLI stores per-project data under ~/.gemini/tmp/<id>/, where <id> is
 // either a sha256 of the project path (legacy) or a ProjectRegistry slug. We
-// enumerate those dirs, resolve each to its cwd, and — for the dir matching the
-// target project — pull the user's typed prompts. chats/ is the rich continuous
-// log; logs.json is a simpler prompt-only fallback for installs without chats/.
-function getGeminiUserMessages(projectRoot, { since, until, geminiTmpRoot, homeDir }) {
+// enumerate those dirs, resolve each to its cwd, and pull the user's typed
+// prompts. chats/ is the rich continuous log; logs.json is a simpler
+// prompt-only fallback for installs without chats/.
+function listGeminiSessions({ since, until, geminiTmpRoot, homeDir }) {
   if (!fs.existsSync(geminiTmpRoot)) return [];
-  const targetPath = normalizePath(projectRoot);
   const idToPath = loadProjectsRegistry(homeDir);
-  const results = [];
+  const sessions = [];
 
   for (const entry of fs.readdirSync(geminiTmpRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -157,19 +156,23 @@ function getGeminiUserMessages(projectRoot, { since, until, geminiTmpRoot, homeD
     const chatFiles = listChatFiles(path.join(projectDir, 'chats'));
 
     const cwd = resolveDirCwd(projectDir, id, chatFiles, idToPath);
-    if (!cwd || normalizePath(cwd) !== targetPath) continue;
+    if (!cwd) continue;
 
     // Prefer chats/ (richer, reliable timestamps); fall back to logs.json only
     // when there are no chat files, so the same prompt isn't counted twice.
-    const fromChats = collectFromChats(chatFiles, since, until);
-    if (chatFiles.length > 0) {
-      results.push(...fromChats);
-    } else {
-      results.push(...collectFromLogs(projectDir, since, until));
-    }
+    const messages =
+      chatFiles.length > 0 ? collectFromChats(chatFiles, since, until) : collectFromLogs(projectDir, since, until);
+    if (messages.length > 0) sessions.push({ source: 'gemini', sessionId: id, cwd, messages });
   }
-
-  return results.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return sessions;
 }
 
-module.exports = { getGeminiUserMessages };
+function getGeminiUserMessages(projectRoot, { since, until, geminiTmpRoot, homeDir }) {
+  const targetPath = normalizePath(projectRoot);
+  return listGeminiSessions({ since, until, geminiTmpRoot, homeDir })
+    .filter((s) => normalizePath(s.cwd) === targetPath)
+    .flatMap((s) => s.messages)
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+module.exports = { getGeminiUserMessages, listGeminiSessions };

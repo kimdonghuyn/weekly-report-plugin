@@ -1,12 +1,14 @@
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { getWeekRange } = require('./lib/week');
 const { loadOrCreateConfig } = require('./lib/config');
-const { findGitRepos, getCommits } = require('./lib/gitScan');
-const { getSessionUserMessages } = require('./lib/sessionScan');
-const { getCodexUserMessages } = require('./lib/codexScan');
-const { getGeminiUserMessages } = require('./lib/geminiScan');
+const { findGitRepos, groupWorktrees, getCommits, getBranchStatus, normalizePath } = require('./lib/gitScan');
+const { listClaudeSessions } = require('./lib/sessionScan');
+const { listCodexSessions, resolveCodexHomes } = require('./lib/codexScan');
+const { listGeminiSessions } = require('./lib/geminiScan');
+const { attributeSessions } = require('./lib/sessionMatch');
 const { parseWeeklyLog } = require('./lib/manualLog');
 const { normalizeScanRoot } = require('./lib/pathSanitize');
 const { getFigmaActivity } = require('./lib/figmaScan');
@@ -22,46 +24,76 @@ function matches(project, repoName) {
   return p.includes(r) || r.includes(p);
 }
 
-async function run({ argv = process.argv.slice(2), homeDir = os.homedir(), figmaFetchJson } = {}) {
+function discoverRepos(scanRoots, scanDepth) {
+  const seen = new Set();
+  const repoPaths = [];
+  for (const rawRoot of scanRoots) {
+    for (const repoPath of findGitRepos(normalizeScanRoot(rawRoot), { maxDepth: scanDepth })) {
+      const key = normalizePath(repoPath);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      repoPaths.push(repoPath);
+    }
+  }
+  return groupWorktrees(repoPaths);
+}
+
+async function run({
+  argv = process.argv.slice(2),
+  homeDir = os.homedir(),
+  env = process.env,
+  platform = process.platform,
+  figmaFetchJson,
+} = {}) {
   const { start } = parseArgs(argv);
   const week = getWeekRange(start);
+  const range = { since: week.start, until: week.end };
 
   const configPath = path.join(homeDir, '.claude', 'weekly-report', 'config.json');
   const config = loadOrCreateConfig(configPath);
   const claudeProjectsRoot = path.join(homeDir, '.claude', 'projects');
-  const codexSessionsRoot = path.join(homeDir, '.codex', 'sessions');
   const geminiTmpRoot = path.join(homeDir, '.gemini', 'tmp');
+  const codexHomes = resolveCodexHomes({ homeDir, env, platform, extraHomes: config.codexHomes || [] });
   const logsDir = path.join(homeDir, '.claude', 'weekly-report', 'logs');
   const manualEntries = parseWeeklyLog(path.join(logsDir, `${week.isoLabel}.md`));
+
+  const repos = discoverRepos(config.scanRoots, config.scanDepth);
+  const sessions = [
+    ...listClaudeSessions({ ...range, claudeProjectsRoot }),
+    ...listCodexSessions({ ...range, codexHomes }),
+    ...listGeminiSessions({ ...range, geminiTmpRoot, homeDir }),
+  ];
+  const { byRepo, unscopedSessions } = attributeSessions(sessions, repos);
 
   const projects = [];
   const claimedEntries = new Set();
 
-  for (const rawRoot of config.scanRoots) {
-    const root = normalizeScanRoot(rawRoot);
-    for (const repoPath of findGitRepos(root)) {
-      const repoName = path.basename(repoPath);
-      const commits = getCommits(repoPath, { since: week.start, until: week.end, authorEmail: config.authorEmail });
-      const claudeMessages = getSessionUserMessages(repoPath, { since: week.start, until: week.end, claudeProjectsRoot });
-      const codexMessages = getCodexUserMessages(repoPath, { since: week.start, until: week.end, codexSessionsRoot, homeDir });
-      const geminiMessages = getGeminiUserMessages(repoPath, { since: week.start, until: week.end, geminiTmpRoot, homeDir });
-      const sessionMessages = [...claudeMessages, ...codexMessages, ...geminiMessages].sort((a, b) =>
-        a.timestamp.localeCompare(b.timestamp)
-      );
-      const ownEntries = manualEntries.filter((e) => matches(e.project, repoName));
+  repos.forEach((repo, i) => {
+    const { repoPath, repoName } = repo;
+    const commits = getCommits(repoPath, { ...range, authorEmail: config.authorEmail });
+    const sessionMessages = byRepo[i];
+    const names = [repoName, ...repo.paths.map((p) => path.basename(p))];
+    const ownEntries = manualEntries.filter((e) => names.some((name) => matches(e.project, name)));
 
-      if (commits.length === 0 && sessionMessages.length === 0 && ownEntries.length === 0) continue;
+    if (commits.length === 0 && sessionMessages.length === 0 && ownEntries.length === 0) return;
 
-      for (const e of ownEntries) claimedEntries.add(e);
-      projects.push({ repoPath, repoName, commits, sessionMessages, manualEntries: ownEntries });
-    }
-  }
+    for (const e of ownEntries) claimedEntries.add(e);
+    projects.push({
+      repoPath,
+      repoName,
+      worktrees: repo.paths.filter((p) => normalizePath(p) !== normalizePath(repoPath) && fs.existsSync(p)),
+      commits,
+      sessionMessages,
+      manualEntries: ownEntries,
+      branches: getBranchStatus(repoPath, { authorEmail: config.authorEmail, until: week.end }),
+    });
+  });
 
   const unmatched = manualEntries.filter((e) => !claimedEntries.has(e));
 
   // Figma는 옵션 소스: 토큰(FIGMA_TOKEN 환경변수 우선)과 teamIds가 설정된 경우에만 조회한다.
   const figmaConfig = config.figma || {};
-  const figmaToken = process.env.FIGMA_TOKEN || figmaConfig.token || '';
+  const figmaToken = env.FIGMA_TOKEN || figmaConfig.token || '';
   const figmaTeamIds = figmaConfig.teamIds || [];
   const figmaFileKeys = figmaConfig.fileKeys || [];
   const figmaConfigured = Boolean(figmaToken) && (figmaTeamIds.length > 0 || figmaFileKeys.length > 0);
@@ -84,6 +116,7 @@ async function run({ argv = process.argv.slice(2), homeDir = os.homedir(), figma
     archivePath: config.archivePath,
     needsSetup: config.scanRoots.length === 0 && !figmaConfigured,
     projects,
+    unscopedSessions,
     unmatched,
     figmaConfigured,
     figma,
